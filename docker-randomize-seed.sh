@@ -1,5 +1,16 @@
 #!/bin/sh
 
+checksum_disk_image() # no parameters
+{
+    CHECKSUM=$(md5 "$INPUTPATH"/"$FILENAME" | cut -d " " -f 4)
+    if [[ "$CHECKSUM" != "b156ba386436d20fd5ed8d37bab6b624" && "$CHECKSUM" != "aefdf27f1cd541ad46b5df794f635f50" && "$CHECKSUM" != "3bd1deebc5c5f08d036dc8651021affb" ]]; then
+        echo "Error: Disk image failed md5 checksum.  This disk image is not Final Fantasy Tactics (PSX)."
+        exit 1
+    else
+        echo $CHECKSUM
+    fi
+}
+
 get_chaos_level() # no parameters
 {
     read -r -p "Choose a chaos level from 0.1 to 7.0 [default 1.0]: " REQUESTEDCHAOS
@@ -32,7 +43,27 @@ get_disk_image()
     fi
 }
 
-give_spoiler() # no parameters
+get_seed() # no parameters
+{
+    SEEDREQUESTED=true
+    read -r -p "Enter an optional 10-digit seed value [default: randomly chosen]: " REQUESTEDSEED
+    if ! [[ "$REQUESTEDSEED" =~ ^[0-9]+$ ]] ; then
+        printf "Your seed must contain only numbers" > stdout
+        exit 1
+    fi
+    REQUESTEDSEEDLENGTH=${#REQUESTEDSEED}
+    if [ $REQUESTEDSEEDLENGTH != 10 ] ; then
+        printf "Your seed must contain exactly 10 digits" > stdout
+        exit 1
+    fi
+    if [ $REQUESTEDSEEDLENGTH == 0 ] ; then
+        printf "Your seed must contain exactly 10 digits" > stdout
+        SEEDREQUESTED=false
+    fi
+    echo $REQUESTEDSEED
+}
+
+get_spoiler() # no parameters
 {
     EXPORTSPOILER=false
     read -r -p "Output spoiler log [default: n]? " GETSPOILER
@@ -40,17 +71,6 @@ give_spoiler() # no parameters
         [Yy]* ) EXPORTSPOILER=true ; echo "Spoiler log will be added to the output directory" ;;
         * ) echo "No spoiler log (Default)" ;;
     esac
-}
-
-get_seed() # no parameters
-{
-    read -r -p "Enter an optional 10-digit seed value [default: randomly chosen]: " REQUESTEDSEED
-        if [ $( echo "${#REQUESTEDSEED}" != 10 ) ] ; then
-            echo "Your seed number must be exactly 10-digits long"
-            exit 1
-        else SEED=".$REQUESTEDSEED"
-        fi
-    echo $SEED
 }
 
 set_flag() # parameters: a flag description and the letter for that flag on the python script
@@ -66,32 +86,20 @@ set_flag() # parameters: a flag description and the letter for that flag on the 
     return
 }
 
-checksum_disk_image() # no parameters
-{
-    CHECKSUM=$(md5 "$INPUTPATH"/"$FILENAME" | cut -d " " -f 4)
-    if [[ "$CHECKSUM" != "b156ba386436d20fd5ed8d37bab6b624" && "$CHECKSUM" != "aefdf27f1cd541ad46b5df794f635f50" && "$CHECKSUM" != "3bd1deebc5c5f08d036dc8651021affb" ]]; then
-        echo "Error: Disk image failed md5 checksum.  This disk image is not Final Fantasy Tactics (PSX)."
-        exit 1
-    else
-        echo $CHECKSUM
-    fi
-}
-
 verify_in_range() # parameters: number to compare, bottom of range, top of range
 {
     CHECK=$1
     BOTTOM=$2
     TOP=$3
-
     if [[ $(bc <<< "$BOTTOM <= $CHECK && $CHECK <= $TOP") == 1 ]] ; then
         echo $CHECK
-    else
+        else
         echo "Error: ${CHECK} is out of the acceptable range of ${BOTTOM} to ${TOP}"
         exit 1
     fi
 }
 
-
+# run application logic
 if [ $# -gt 2 ] ; then
     INPUTPATH=$2
     OUTPUTPATH=$3
@@ -99,16 +107,22 @@ if [ $# -gt 2 ] ; then
     INPUTPATH=$(get_directory input)
     OUTPUTPATH=$(get_directory output)
 fi
-    if [ $# -gt 0 ] ; then
-        FILENAME=$1
+if [ $# -gt 0 ] ; then
+    FILENAME=$1
     else
-        FILENAME=$(get_disk_image)
-    fi
+    FILENAME=$(get_disk_image)
+fi
 checksum_disk_image
+SEEDISRANDOM=false
 if [ $# -gt 4 ] ; then
-    SEED=".$5"
+    SEED="$5"
+    break
     else
     SEED=$(get_seed)
+    if [ ${#SEED} == "0" ] ; then
+    SEEDISRANDOM=true
+    break
+    fi
 fi
 if [ $# -gt 3 ] ; then
     FLAGS=$4
@@ -136,7 +150,7 @@ if [ $# -gt 3 ] ; then
     set_flag "Enable special surprises" "z"
     set_flag "Enable autoplay cutscenes" "o"
 fi
-give_spoiler
+get_spoiler
 if [ $# -gt 5 ] ; then
     CHAOS=$6
     else 
@@ -152,11 +166,17 @@ echo "Local docker image with id ${IMAGEID} has been tagged as 'fft_rcc:latest'"
 echo
 echo "chaos multiplier: ${CHAOS}"
 echo "disk image: ${INPUTPATH}/${FILENAME}"
-echo "disk image checksum: ${CHECKSUM}"
+echo "input disk image checksum: ${CHECKSUM}"
+echo "output directory: ${OUTPUTPATH}"
 echo "exporting spoiler: ${EXPORTSPOILER}"
+echo "random seed: ${SEEDISRANDOM}"
 echo "seed value: ${SEED}"
 echo "selected flags: ${FLAGS}"
-echo "output directory: ${OUTPUTPATH}"
 echo
-
-docker run --rm -e SEED=${SEED} -e FLAGS=${FLAGS} -e CHAOS=${CHAOS} -e FILENAME=${FILENAME} -e EXPORTSPOILER=${EXPORTSPOILER} -v ${INPUTPATH}:/input -v ${OUTPUTPATH}:/output fft_rcc
+if [ $SEEDISRANDOM == "true" ] ; then
+    echo "Randomizing your disk image with random seed"
+    docker run --rm -e FLAGS=${FLAGS} -e CHAOS=${CHAOS} -e FILENAME=${FILENAME} -e EXPORTSPOILER=${EXPORTSPOILER} -v ${INPUTPATH}:/input -v ${OUTPUTPATH}:/output fft_rcc
+    else
+    echo "Randomizing your disk imagewith chosen seed: ${SEED}"
+    docker run --rm -e SEED=${SEED} -e FLAGS=${FLAGS} -e CHAOS=${CHAOS} -e FILENAME=${FILENAME} -e EXPORTSPOILER=${EXPORTSPOILER} -v ${INPUTPATH}:/input -v ${OUTPUTPATH}:/output fft_rcc
+fi
