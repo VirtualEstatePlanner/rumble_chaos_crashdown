@@ -1,8 +1,6 @@
-FFT Rumble Chaos Crashdown Randomizer
-Version:    27
-Date:       May 23, 2020
-URL:        https://github.com/abyssonym/rumble_chaos_crashdown
-Contact:    https://twitter.com/abyssonym
+Final Fantasy Tactics Rumble Chaos Crashdown Randomizer Version 27 (released May 23, 2020)
+
+[GitHub Repo](https://github.com/abyssonym/rumble_chaos_crashdown) - [abyssonym's Twitter](https://twitter.com/abyssonym)
 
 ### HOW TO USE ###
 Running the randomizer:
@@ -65,10 +63,10 @@ Output files:
     The randomizer will output a new, randomized ISO with the seed in the filename. If you choose to randomize job requirements, it will also output a text file with the new job requirements inside.
 
 ### SPECIAL THANKS & CONTRIBUTORS ###
-Ryason55 - https://www.youtube.com/user/Ryason55
+[Ryason55](https://www.youtube.com/user/Ryason55)
 Contributed the code to randomize item/equipment stats and weapon/ability status effects, plus bugfixes.
 
-VirtualEstatePlanner - https://github.com/VirtualEstatePlanner
+[VirtualEstatePlanner](https://github.com/VirtualEstatePlanner)
 Put it in a Docker container and made it easy for OpenEmu users to enjoy.
     
 Like this randomizer? Be sure to check out my other projects at www.abyssonym.com, on my github, and on twitter.
