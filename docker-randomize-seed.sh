@@ -177,6 +177,6 @@ if [ $SEEDISRANDOM == "true" ] ; then
     echo "Randomizing your disk image with random seed"
     docker run --rm -e FLAGS=${FLAGS} -e CHAOS=${CHAOS} -e FILENAME=${FILENAME} -e EXPORTSPOILER=${EXPORTSPOILER} -v ${INPUTPATH}:/input -v ${OUTPUTPATH}:/output fft_rcc
     else
-    echo "Randomizing your disk imagewith chosen seed: ${SEED}"
+    echo "Randomizing your disk image with chosen seed: ${SEED}"
     docker run --rm -e SEED=${SEED} -e FLAGS=${FLAGS} -e CHAOS=${CHAOS} -e FILENAME=${FILENAME} -e EXPORTSPOILER=${EXPORTSPOILER} -v ${INPUTPATH}:/input -v ${OUTPUTPATH}:/output fft_rcc
 fi
